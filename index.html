@@ -1,0 +1,278 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Song Finder</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #10111b;
+    color: white;
+}
+
+header {
+    text-align: center;
+    padding: 45px 20px 25px;
+}
+
+header h1 {
+    font-size: 38px;
+    margin-bottom: 10px;
+}
+
+header p {
+    color: #aaaabb;
+}
+
+.search-area {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    max-width: 750px;
+    margin: auto;
+}
+
+input {
+    flex: 1;
+    min-width: 0;
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid #39394d;
+    background: #202131;
+    color: white;
+    font-size: 16px;
+}
+
+button {
+    padding: 14px 20px;
+    border: none;
+    border-radius: 10px;
+    background: #8b5cf6;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #7040d9;
+}
+
+#status {
+    text-align: center;
+    color: #aaaabb;
+    margin: 15px;
+}
+
+.results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 20px;
+    padding: 25px;
+    max-width: 1200px;
+    margin: auto;
+}
+
+.song {
+    background: #202131;
+    border-radius: 15px;
+    padding: 15px;
+    overflow: hidden;
+}
+
+.song img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.song h3 {
+    margin-bottom: 5px;
+    font-size: 17px;
+}
+
+.song p {
+    color: #aaaabb;
+    font-size: 13px;
+}
+
+.song audio {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.song a {
+    display: inline-block;
+    margin-top: 12px;
+    color: #b69aff;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.song a:hover {
+    text-decoration: underline;
+}
+
+@media(max-width: 450px) {
+    .search-area {
+        flex-wrap: wrap;
+    }
+
+    .search-area button {
+        width: 100%;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🎵 Song Finder</h1>
+    <p>Find your favorite songs and discover new music.</p>
+</header>
+
+<div class="search-area">
+    <input
+        id="searchInput"
+        type="text"
+        placeholder="Search a song or artist..."
+    >
+    <button id="searchButton">Search</button>
+</div>
+
+<div id="status">Search for a song to get started!</div>
+
+<div class="results" id="results"></div>
+
+<script>
+
+const searchInput = document.getElementById("searchInput");
+const searchButton = document.getElementById("searchButton");
+const results = document.getElementById("results");
+const status = document.getElementById("status");
+
+async function findSongs() {
+
+    const query = searchInput.value.trim();
+
+    if (!query) {
+        status.textContent = "Please enter a song or artist.";
+        return;
+    }
+
+    results.innerHTML = "";
+    status.textContent = "Searching for songs...";
+
+    try {
+
+        const url =
+            "https://itunes.apple.com/search?term=" +
+            encodeURIComponent(query) +
+            "&entity=song&limit=30";
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error("Search failed");
+        }
+
+        const data = await response.json();
+
+        results.innerHTML = "";
+
+        if (data.results.length === 0) {
+            status.textContent = "No songs found. Try another search!";
+            return;
+        }
+
+        status.textContent =
+            "Found " + data.resultCount + " results.";
+
+        data.results.forEach(song => {
+
+            const card = document.createElement("div");
+            card.className = "song";
+
+            const image = document.createElement("img");
+            image.src = song.artworkUrl100.replace(
+                "100x100",
+                "300x300"
+            );
+            image.alt = song.collectionName || "Album artwork";
+            card.appendChild(image);
+
+            const title = document.createElement("h3");
+            title.textContent = song.trackName;
+            card.appendChild(title);
+
+            const artist = document.createElement("p");
+            artist.textContent = "Artist: " + song.artistName;
+            card.appendChild(artist);
+
+            const album = document.createElement("p");
+            album.textContent = "Album: " +
+                (song.collectionName || "Unknown");
+            card.appendChild(album);
+
+            if (song.previewUrl) {
+                const audio = document.createElement("audio");
+                audio.controls = true;
+                audio.preload = "none";
+                audio.src = song.previewUrl;
+                audio.addEventListener("play", () => {
+                    document.querySelectorAll("audio").forEach(player => {
+                        if (player !== audio) {
+                            player.pause();
+                        }
+                    });
+                });
+                card.appendChild(audio);
+            } else {
+                const unavailable = document.createElement("p");
+                unavailable.textContent = "Preview unavailable";
+                card.appendChild(unavailable);
+            }
+
+            const link = document.createElement("a");
+            link.href = song.trackViewUrl;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.textContent = "Open in Apple Music ↗";
+            card.appendChild(link);
+
+            results.appendChild(card);
+
+        });
+
+    } catch (error) {
+
+        status.textContent =
+            "Something went wrong. Please try again.";
+
+        console.error(error);
+
+    }
+}
+
+searchButton.addEventListener("click", findSongs);
+
+searchInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+        findSongs();
+    }
+});
+
+</script>
+
+</body>
+</html>
