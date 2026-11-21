@@ -152,7 +152,11 @@ button:hover {
 
 <div id="status">Search for a song to get started!</div>
 
+<h2 style="text-align:center;">Search Results</h2>
 <div class="results" id="results"></div>
+
+<h2 style="text-align:center;">🎧 More Music to Discover</h2>
+<div class="results" id="recommendations"></div>
 
 <script>
 
@@ -160,9 +164,102 @@ const searchInput = document.getElementById("searchInput");
 const searchButton = document.getElementById("searchButton");
 const results = document.getElementById("results");
 const status = document.getElementById("status");
+async function discoverMusic(artist) {
 
+    recommendations.innerHTML = "";
+
+    try {
+        const url =
+            "https://itunes.apple.com/search?term=" +
+            encodeURIComponent(artist) +
+            "&entity=song&limit=12";
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const songs = data.results.filter(song =>
+            song.artistName.toLowerCase() === artist.toLowerCase()
+        );
+
+        if (songs.length === 0) {
+            recommendations.textContent =
+                "No additional recommendations found.";
+            return;
+        }
+
+        songs.forEach(song => {
+
+            const card = document.createElement("div");
+            card.className = "song";
+
+            const image = document.createElement("img");
+            image.src = song.artworkUrl100;
+            image.alt = song.trackName;
+
+            const title = document.createElement("h3");
+            title.textContent = song.trackName;
+
+            const artistName = document.createElement("p");
+            artistName.textContent = song.artistName;
+
+            card.appendChild(image);
+            card.appendChild(title);
+            card.appendChild(artistName);
+
+            if (song.previewUrl) {
+                const audio = document.createElement("audio");
+                audio.controls = true;
+                audio.preload = "none";
+                audio.src = song.previewUrl;
+                card.appendChild(audio);
+            }
+
+            recommendations.appendChild(card);
+        });
+
+    } catch (error) {
+        recommendations.textContent =
+            "Could not load recommendations.";
+    }
+}
 async function findSongs() {
 
+
+        songs.forEach(song => {
+
+            const card = document.createElement("div");
+            card.className = "song";
+
+            const image = document.createElement("img");
+            image.src = song.artworkUrl100;
+            image.alt = song.trackName;
+
+            const title = document.createElement("h3");
+            title.textContent = song.trackName;
+
+            const artistName = document.createElement("p");
+            artistName.textContent = song.artistName;
+
+            card.appendChild(image);
+            card.appendChild(title);
+            card.appendChild(artistName);
+
+            if (song.previewUrl) {
+                const audio = document.createElement("audio");
+                audio.controls = true;
+                audio.preload = "none";
+                audio.src = song.previewUrl;
+                card.appendChild(audio);
+            }
+
+            recommendations.appendChild(card);
+        });
+
+    } catch (error) {
+        recommendations.textContent =
+            "Could not load recommendations.";
+    }
+}
     const query = searchInput.value.trim();
 
     if (!query) {
@@ -210,6 +307,21 @@ async function findSongs() {
             );
             image.alt = song.collectionName || "Album artwork";
             card.appendChild(image);
+            const spotifyLink = document.createElement("a");
+
+spotifyLink.href =
+    "https://open.spotify.com/search/" +
+    encodeURIComponent(song.trackName + " " + song.artistName);
+
+spotifyLink.target = "_blank";
+spotifyLink.rel = "noopener noreferrer";
+spotifyLink.textContent = "🎧 Listen on Spotify ↗";
+
+spotifyLink.style.display = "block";
+spotifyLink.style.marginTop = "12px";
+spotifyLink.style.color = "#1DB954";
+
+card.appendChild(spotifyLink);
 
             const title = document.createElement("h3");
             title.textContent = song.trackName;
